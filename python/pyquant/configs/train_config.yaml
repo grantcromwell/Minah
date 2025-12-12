@@ -1,0 +1,144 @@
+# Model architecture
+input_dim: 64                # Number of input features
+d_model: 256                 # Dimension of the model
+nhead: 8                     # Number of attention heads
+num_layers: 6                # Number of transformer layers
+dim_feedforward: 1024        # Dimension of the feedforward network
+dropout: 0.1                 # Dropout rate
+output_dim: 3                # Number of output classes (long, neutral, short)
+
+# Training parameters
+batch_size: 64               # Batch size
+seq_len: 60                  # Length of input sequences
+prediction_horizon: 5        # Number of time steps to predict ahead
+epochs: 100                  # Number of training epochs
+lr: 1e-4                     # Learning rate
+weight_decay: 1e-5           # Weight decay
+clip_grad: 1.0               # Gradient clipping
+
+# Data parameters
+data_path: "data/processed/training_data.csv"  # Path to training data
+feature_columns: [
+    'open', 'high', 'low', 'close', 'volume',
+    'rsi', 'macd', 'bollinger_upper', 'bollinger_lower',
+    'atr', 'obv', 'vwap', 'sma_20', 'ema_50', 'ema_200',
+    'hour', 'day_of_week', 'day_of_month', 'month'
+]
+target_columns: ['returns']
+val_split: 0.1               # Fraction of data for validation
+test_split: 0.1              # Fraction of data for testing
+normalize: true              # Whether to normalize the data
+
+# Training settings
+use_amp: true                # Use Automatic Mixed Precision
+distributed: true            # Use distributed training
+num_gpus: 1                  # Number of GPUs to use
+seed: 42                     # Random seed
+
+# Checkpointing and logging
+model_dir: "models/transformer"  # Directory to save models
+log_dir: "logs"                 # Directory for logs
+checkpoint_freq: 1           # Save checkpoint every N epochs
+resume: null                 # Path to checkpoint to resume from
+
+# MLflow settings
+tracking_uri: "http://localhost:5000"
+experiment_name: "trading_transformer"
+
+# Evaluation
+metrics: ['accuracy', 'sharpe_ratio', 'max_drawdown', 'profit_factor']
+
+# Early stopping
+early_stopping:
+  patience: 10               # Number of epochs to wait before early stopping
+  min_delta: 0.001           # Minimum change to qualify as improvement
+
+# Learning rate schedule
+lr_scheduler:
+  name: "reduce_on_plateau"   # or "cosine", "step", "multistep"
+  mode: "min"                 # For ReduceLROnPlateau: "min" or "max"
+  factor: 0.5                 # Factor by which to reduce the learning rate
+  patience: 5                 # Number of epochs with no improvement after which learning rate will be reduced
+  min_lr: 1e-6                # Minimum learning rate
+
+# Data augmentation
+data_augmentation:
+  random_shift: 0.1          # Randomly shift sequences by up to 10%
+  random_noise: 0.001        # Add random Gaussian noise with this std
+  random_drop: 0.05          # Randomly drop features with this probability
+
+# Model-specific parameters
+transformer:
+  activation: "gelu"          # Activation function: "relu" or "gelu"
+  layer_norm_eps: 1e-5        # Epsilon for layer normalization
+  batch_first: true          # If True, input and output tensors are provided as (batch, seq, feature)
+  norm_first: false          # If True, layer norm is done prior to self attention and feedforward
+
+# Loss function parameters
+loss:
+  alpha: 0.7                 # Weight for policy loss (1-alpha for value loss)
+  gamma: 2.0                 # Focal loss gamma (if using focal loss)
+  label_smoothing: 0.1       # Label smoothing factor
+
+# Optimizer parameters
+optimizer:
+  name: "adamw"               # "adam", "adamw", "sgd"
+  betas: [0.9, 0.999]        # Beta parameters for Adam/AdamW
+  eps: 1e-8                   # Epsilon parameter for Adam/AdamW
+  momentum: 0.9               # Momentum for SGD
+  nesterov: true              # Use Nesterov momentum for SGD
+
+# Distributed training
+distributed:
+  backend: "nccl"            # Backend for distributed training
+  init_method: "env://"       # Initialization method
+  world_size: 1               # Number of processes
+  rank: 0                     # Process rank
+
+# Logging
+logging:
+  level: "info"               # Logging level (debug, info, warning, error, critical)
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "training.log"        # Log file path (None for stdout)
+
+# Callbacks
+callbacks:
+  - name: "early_stopping"
+  - name: "model_checkpoint"
+    save_best_only: true
+    mode: "min"
+    monitor: "val_loss"
+  - name: "tensorboard"
+    log_dir: "logs/tensorboard"
+  - name: "csv_logger"
+    filename: "logs/training_log.csv"
+
+# System configuration
+device: "cuda"               # Device to use: "cuda" or "cpu"
+deterministic: true          # Set random seeds for reproducibility
+benchmark: false             # Enable cuDNN benchmark
+cudnn_enabled: true          # Enable cuDNN
+data_workers: 4              # Number of data loading workers
+pin_memory: true             # Pin memory for faster data transfer to GPU
+
+# Deployment
+model_format: "torchscript"  # Format to save the model: "torchscript" or "onnx"
+quantize: false              # Whether to quantize the model for deployment
+
+# Hyperparameter search (optional)
+hparam_search:
+  enabled: false
+  method: "optuna"           # "optuna" or "ray"
+  n_trials: 100
+  timeout: 3600              # Timeout in seconds
+  params:
+    lr:
+      type: "log_float"
+      min: 1e-6
+      max: 1e-3
+    batch_size:
+      type: "categorical"
+      values: [32, 64, 128, 256]
+    d_model:
+      type: "categorical"
+      values: [128, 256, 512]

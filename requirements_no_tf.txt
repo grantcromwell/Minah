@@ -1,0 +1,30 @@
+# Core Dependencies
+cirq
+numpy>=1.21.0
+sympy
+scipy
+pandas>=1.3.0
+matplotlib
+scikit-learn>=1.0.0
+
+# Phase 1: Core Infrastructure
+mesa==2.1.2
+numba>=0.56.0
+cupy-cuda11x>=10.0.0  # Note: Choose appropriate CUDA version
+pycuda>=2022.1
+pytorch>=1.12.0
+torchvision
+torchaudio
+
+# Performance Monitoring
+psutil>=5.9.0
+gputil>=1.4.0
+pynvml>=11.0.0
+py3nvml>=0.2.7
+
+# Testing & Development
+pytest>=7.0.0
+pytest-benchmark>=4.0.0
+black>=22.10.0
+mypy>=1.0.0
+pylint>=2.15.0
